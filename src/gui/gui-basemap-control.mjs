@@ -261,8 +261,8 @@ export function Basemap(gui) {
   
     loadStylesheet(params.css);
     loadScript(params.js, function() {
-      const defaultStyle = params.styles.find(style => style.id === 'streets'); // Set default style to 'streets'
-      const initialStyle = activeStyle?.url || params.styles.find(style => style.id === 'streets').url;
+      const defaultStyle = params.styles.find(style => style.id === 'light'); // Set default style to the minimal light basemap
+      const initialStyle = activeStyle?.url || params.styles.find(style => style.id === 'light').url;
       map = new window.mapboxgl.Map({
         accessToken: accessToken,
         logoPosition: 'bottom-left',

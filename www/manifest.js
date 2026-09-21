@@ -6,5 +6,5 @@ mapshaper.manifest = {
     `${baseURL}/mapshaper/data/network - links.zip`
   ],
   quick_view: true,
-  commands: "-classify field=cycleway save-as=stroke colors='#bdbdbd,#2576b8,#43a340,#ff7f00,#06c7b4,#d62f31,#9848a8'"
+  commands: "-classify field=cycleway save-as=stroke colors='#bdbdbd,#eda100,#eb6834,#2a78d6,#e34948,#1baf7a,#008300'"
 };

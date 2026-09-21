@@ -122,7 +122,7 @@ export function Popup(gui, toNext, toPrev) {
       El('span').addClass('add-field-btn').appendTo(footer).on('click', async function(e) {
         // show "add field" dialog
         openAddFieldPopup(gui, recIds, lyr);
-      }).text('+ add field');
+      })//.text('+ add field');
     } else if (pinned) {
       // render "Click to edit" button
       El('span').addClass('edit-data-btn').appendTo(footer).on('click', async function(e) {
@@ -143,7 +143,10 @@ export function Popup(gui, toNext, toPrev) {
       rec = getMultiRecord(recIds, table);
     }
     rec = rec || {};
-    var fieldsToShow = ['cycleway', 'link_id', 'highway', 'length', 'freespeed', 'capacity', 'adt', 'slope_pct', 'lvl_traf_s', 'tcc_percen', 'osm_id', 'from_id', 'to_id', 'fromx', 'fromy', 'tox', 'toy'];
+    // Curated for planners: drop internal ids/coordinates and fields that
+    // are unpopulated in practice (adt, slope_pct are null on every link),
+    // keep only what's meaningful when reviewing/editing a link.
+    var fieldsToShow = ['cycleway', 'highway', 'lvl_traf_s', 'length', 'freespeed', 'permlanes'];
     
     fieldsToShow.forEach(function(key) {
         if (key in rec) {
@@ -178,14 +181,53 @@ export function Popup(gui, toNext, toPrev) {
   }
 
 
-  function renderRow(key, val, recIds, table, editable) {
-    var type = getFieldType(val, key, table);
-    var str = formatInspectorValue(val, type);
-    
-    if (editable && key === 'cycleway') {
-      // Create dropdown for cycleway field
-      var dropdownOptions = [
-        {value: '', label: ''},
+// Planner-friendly labels and units for the fields in fieldsToShow, so the
+    // popup reads like a briefing instead of a raw data dump. Inlined as a
+    // switch (no external lookup object) and defensively try/caught below --
+    // this runs on every hover/selection in the map, so a labeling hiccup
+    // must never be able to crash that interaction.
+    function getFieldLabel(key) {
+      try {
+        switch (key) {
+          case 'cycleway': return 'Cycleway Type';
+          case 'highway': return 'Road Type';
+          case 'lvl_traf_s': return 'Traffic Stress (LTS)';
+          case 'length': return 'Length';
+          case 'freespeed': return 'Speed Limit';
+          case 'permlanes': return 'Lanes';
+          default: return key;
+        }
+      } catch (e) {
+        return key;
+      }
+    }
+
+    function getDisplayValue(key, val, str) {
+      try {
+        if (key === 'length' && typeof val === 'number') {
+          return Math.round(val) + ' m';
+        }
+        if (key === 'freespeed' && typeof val === 'number') {
+          return Math.round(val * 3.6) + ' km/h'; // network stores free-flow speed in m/s
+        }
+        if (key === 'cycleway' && !val) {
+          return 'No Cycleway';
+        }
+        return str;
+      } catch (e) {
+        return str;
+      }
+    }
+
+    function renderRow(key, val, recIds, table, editable) {
+      var type = getFieldType(val, key, table);
+      var str = formatInspectorValue(val, type);
+      var label = getFieldLabel(key);
+
+      if (editable && key === 'cycleway') {
+        // Create dropdown for cycleway field
+        var dropdownOptions = [
+          {value: '', label: 'No Cycleway'},
         {value: 'bikepath', label: 'bikepath'},
         {value: 'shared_path', label: 'shared_path'},
         {value: 'separated_lane', label: 'separated_lane'},
@@ -199,7 +241,7 @@ export function Popup(gui, toNext, toPrev) {
         return `<option value="${utils.htmlEscape(option.value)}"${selected}>${utils.htmlEscape(option.label)}</option>`;
       }).join('');
       
-      var rowHtml = `<td class="field-name">${key}</td><td><select class="cycleway-dropdown value">${optionsHtml}</select></td>`;
+      var rowHtml = `<td class="field-name">${utils.htmlEscape(label)}</td><td><select class="cycleway-dropdown value">${optionsHtml}</select></td>`;
       var rowEl = El('tr').html(rowHtml);
       var cellEl = rowEl.findChild('.value');
       
@@ -216,7 +258,8 @@ export function Popup(gui, toNext, toPrev) {
       
     } else {
       // All other fields or non-editable cycleway
-      var rowHtml = `<td class="field-name">${key}</td><td><span class="value">${utils.htmlEscape(str)}</span> </td>`;
+      var displayStr = getDisplayValue(key, val, str);
+      var rowHtml = `<td class="field-name">${utils.htmlEscape(label)}</td><td><span class="value">${utils.htmlEscape(displayStr)}</span> </td>`;
       var rowEl = El('tr').html(rowHtml);
       var cellEl = rowEl.findChild('.value');
       

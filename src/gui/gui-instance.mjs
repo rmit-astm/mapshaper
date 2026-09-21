@@ -57,6 +57,7 @@ export function GuiInstance(container, opts) {
     new SessionSnapshots(gui);
   }
   gui.interaction = new InteractionMode(gui);
+  window.__mshpGui = gui; // expose for the FASTrack shell's quick-actions toolbar
 
   gui.showProgressMessage = function(msg) {
     if (!gui.progressMessage) {

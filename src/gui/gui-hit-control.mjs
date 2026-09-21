@@ -350,7 +350,6 @@ export function HitControl(gui, ext, mouse) {
     }
     if (selectable()) {
       hitData.ids = selectionIds;
-      if (pinnedOn) hitData.id = -1;
       // kludge to inhibit hover effect while dragging a box
       if (gui.keydown) hitData.id = -1;
     }

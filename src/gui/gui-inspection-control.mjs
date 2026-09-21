@@ -20,13 +20,13 @@ export function InspectionControl2(gui, hit) {
 
     if (e.field == 'cycleway') {
       var cyclewayColours = {
-        '': '#d3d3d3',
-        'bikepath': '#9848a8',
-        'shared_path': '#d62f31',
-        'separated_lane': '#ff7f00',
-        'simple_lane': '#2576b8',
-        'inadequate_lane': '#43a340',
-        'shared_street': '#06c7b4'
+        '': '#bdbdbd',
+        'bikepath': '#008300',
+        'shared_path': '#1baf7a',
+        'separated_lane': '#2a78d6',
+        'simple_lane': '#eda100',
+        'inadequate_lane': '#eb6834',
+        'shared_street': '#e34948'
       };
       var colour = cyclewayColours[e.value];
       if (colour) {
@@ -123,13 +123,8 @@ export function InspectionControl2(gui, hit) {
   hit.on('change', function(e) {
     if (!inspecting()) return;
     if (gui.keyboard.ctrlIsPressed()) return;
-    var ids;
-    if (e.mode == 'selection') {
-      ids = e.pinned && e.ids || [];
-    } else {
-      ids = e.ids || [];
-    }
-    inspect(e.id, ids, e.pinned);
+    var ids = e.ids || [];
+    inspect(e.mode == 'selection' ? -1 : e.id, ids, e.mode == 'selection' || e.pinned);
   });
 
   // id: Id of a feature in the active layer, or -1

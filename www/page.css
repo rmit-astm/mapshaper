@@ -194,11 +194,7 @@ body.map-view {
 	padding: 8px 8px 0px 8px;
 }
 
-.export-btn {
-	color: #f8f549;
-}
-
-.console-btn, .simplify-btn, .wiki-btn, .github-btn {
+.export-btn, .console-btn, .simplify-btn, .wiki-btn, .github-btn {
     display: none !important;
 }
 
@@ -212,6 +208,87 @@ body.map-view {
 .btn.toggle-btn.active {
 	background-color: black;
 }
+
+/* --- FASTrack toolbar buttons (injected into #mode-buttons) --------------- */
+
+/* Hidden natively; reachable via the "More" overflow menu instead, so the
+   primary bar only shows the tool's most-used actions. */
+.layer-control-btn,
+.display-btn {
+	display: none !important;
+}
+
+.fastrack-toolbar-btn {
+	display: inline-flex;
+	align-items: center;
+	position: relative;
+	height: 20px;
+	margin: 4px 2px 0 0;
+	padding: 0 8px;
+	font-family: Inter, system-ui, sans-serif;
+	font-size: 12px;
+	font-weight: 600;
+	white-space: nowrap;
+	color: #171c60;
+	background-color: #eef0fa;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.fastrack-toolbar-btn:hover {
+	background-color: #ffffff;
+}
+
+.fastrack-toolbar-btn.active {
+	background-color: #e61e29;
+	color: #ffffff;
+}
+
+.fastrack-upload-btn {
+	background-color: #f5f373;
+}
+
+.fastrack-upload-btn:hover {
+	background-color: #fffda2;
+}
+
+.fastrack-options-btn {
+	background-color: transparent;
+	color: #ffffff;
+	padding: 0 6px;
+}
+
+.fastrack-options-btn:hover {
+	background-color: #0e113a;
+}
+
+.fastrack-options-menu {
+	position: absolute;
+	top: 26px;
+	right: 0;
+	min-width: 150px;
+	background-color: #ffffff;
+	border-radius: 8px;
+	box-shadow: 0 4px 16px rgba(23, 28, 96, 0.25);
+	padding: 4px;
+	z-index: 100;
+}
+
+.fastrack-options-menu-item {
+	padding: 7px 10px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #171c60;
+	border-radius: 5px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.fastrack-options-menu-item:hover {
+	background-color: #eef0fa;
+}
+
 .separator {
 	border-left: 1px solid white;
 	height: 10px;
@@ -223,6 +300,7 @@ body.map-view {
 
 .selection-tool-options {
 	pointer-events: none;
+	display: none !important;
 }
 
 .selection-tool-options .info-box {
@@ -1405,6 +1483,10 @@ body.pan.panning .map-layers:not(.drawing) {
 .nav-btn.selected {
 	background-color: #e61e29;
 	border-radius: 5px;
+}
+
+.nav-btn.menu-btn.pointer-btn {
+	display: none !important;
 }
 
 .nav-btn:hover:not(.disabled) svg *,

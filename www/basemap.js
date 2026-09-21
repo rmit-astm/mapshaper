@@ -1,9 +1,23 @@
 window.mapboxParams = {
   js: 'https://api.mapbox.com/mapbox-gl-js/v2.11.1/mapbox-gl.js',
   css: 'https://api.mapbox.com/mapbox-gl-js/v2.11.1/mapbox-gl.css',
-  production_key: 'pk.eyJ1IjoiZ3JhbW1hdGEiLCJhIjoiY21jZ2RlbGk1MGhvNzJrcHV2dTYzZWE2byJ9.btkRnRrPW75c0AlQ5lH2cg',
+  production_key: 'pk.eyJ1IjoiZ3JhbW1hdGEiLCJhIjoiY21jZ2Rna2hrMGo2ZjJqcHFxMHAycDlyMSJ9.q8FchhB-NAN_FGBHN0AJeg',
   localhost_key: 'pk.eyJ1IjoiZ3JhbW1hdGEiLCJhIjoiY21jZ2Rna2hrMGo2ZjJqcHFxMHAycDlyMSJ9.q8FchhB-NAN_FGBHN0AJeg',
   styles: [
+    {
+      id: 'light',
+      name: 'Light',
+      icon: 'images/thumb-light.jpg',
+      type: 'vector',
+      url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+    },
+    {
+      id: 'dark',
+      name: 'Dark',
+      icon: 'images/thumb-dark.jpg',
+      type: 'vector',
+      url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+    },
     {
       id: 'streets',
       name: 'Streets',
