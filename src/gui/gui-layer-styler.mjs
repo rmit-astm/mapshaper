@@ -1,4 +1,5 @@
 import { internal, utils } from './gui-core';
+import { isTransitLink, isPathLink, isFastrackTransitVisible } from './gui-fastrack';
 
 var darkStroke = "#334",
     lightStroke = "#b7d9ea",
@@ -97,6 +98,7 @@ export function getCanvasDisplayStyle(lyr) {
   var styler = function(style, i) {
     var rec = records[i];
     var fname, val;
+    style.lineDash = null; // the style object is reused across features
     for (var j=0; j<fields.length; j++) {
       fname = fields[j];
       val = rec && rec[fname];
@@ -105,6 +107,14 @@ export function getCanvasDisplayStyle(lyr) {
       }
       // convert svg property name to mapshaper style equivalent
       style[styleIndex[fname]] = val;
+    }
+
+    if (isTransitLink(rec)) {
+      var showTransit = isFastrackTransitVisible();
+      style.strokeColor = showTransit ? '#9a9aa8' : 'transparent';
+      style.lineDash = showTransit ? '2 4' : null;
+    } else if (isPathLink(rec)) {
+      style.lineDash = '6 3';
     }
 
     if (style.strokeWidth && !style.strokeColor) {

@@ -3,7 +3,10 @@ import { utils, internal } from './gui-core';
 import { El } from './gui-el';
 import { GUI } from './gui-lib';
 import { ClickText2 } from './gui-elements';
-import { openAddFieldPopup } from './gui-add-field-popup';
+import {
+  getCyclewayColor,
+  getCyclewayLabel,
+  isTransitLink } from './gui-fastrack';
 
 // toNext, toPrev: trigger functions for switching between multiple records
 export function Popup(gui, toNext, toPrev) {
@@ -34,8 +37,10 @@ export function Popup(gui, toNext, toPrev) {
 
     // stash a function for refreshing the current popup when data changes
     // while the popup is being displayed (e.g. while dragging a label)
+    // Info only: cycleway edits are made from the FASTrack shell's
+    // selection bar, so the popup never renders editable fields.
     refresh = function() {
-      render(id, ids, lyr, pinned, singleEdit || multiEdit);
+      render(id, ids, lyr, pinned, false);
     };
     refresh();
     if (multiEdit) {
@@ -115,20 +120,6 @@ export function Popup(gui, toNext, toPrev) {
       el.html(utils.format('<div class="note">This %s is missing attribute data.</div>',
           table && table.getFields().length > 0 ? 'feature': 'layer'));
     }
-
-    var footer = El('div').appendTo(el);
-    if (editable) {
-      // render "add field" button
-      El('span').addClass('add-field-btn').appendTo(footer).on('click', async function(e) {
-        // show "add field" dialog
-        openAddFieldPopup(gui, recIds, lyr);
-      })//.text('+ add field');
-    } else if (pinned) {
-      // render "Click to edit" button
-      El('span').addClass('edit-data-btn').appendTo(footer).on('click', async function(e) {
-        self.show(id, ids, lyr, true, true);
-      }).text('▸ click to edit');
-    }
   }
 
   function renderTable(recIds, table, editable) {
@@ -189,7 +180,7 @@ export function Popup(gui, toNext, toPrev) {
     function getFieldLabel(key) {
       try {
         switch (key) {
-          case 'cycleway': return 'Cycleway Type';
+          case 'cycleway': return 'Cycling Infrastructure';
           case 'highway': return 'Road Type';
           case 'lvl_traf_s': return 'Traffic Stress (LTS)';
           case 'length': return 'Length';
@@ -210,8 +201,8 @@ export function Popup(gui, toNext, toPrev) {
         if (key === 'freespeed' && typeof val === 'number') {
           return Math.round(val * 3.6) + ' km/h'; // network stores free-flow speed in m/s
         }
-        if (key === 'cycleway' && !val) {
-          return 'No Cycleway';
+        if (key === 'cycleway') {
+          return getCyclewayLabel(val);
         }
         return str;
       } catch (e) {
@@ -224,49 +215,15 @@ export function Popup(gui, toNext, toPrev) {
       var str = formatInspectorValue(val, type);
       var label = getFieldLabel(key);
 
-      if (editable && key === 'cycleway') {
-        // Create dropdown for cycleway field
-        var dropdownOptions = [
-          {value: '', label: 'No Cycleway'},
-        {value: 'bikepath', label: 'bikepath'},
-        {value: 'shared_path', label: 'shared_path'},
-        {value: 'separated_lane', label: 'separated_lane'},
-        {value: 'simple_lane', label: 'simple_lane'},
-        {value: 'inadequate_lane', label: 'inadequate_lane'},
-        {value: 'shared_street', label: 'shared_street'}
-      ];
-      
-      var optionsHtml = dropdownOptions.map(function(option) {
-        var selected = val === option.value ? ' selected' : '';
-        return `<option value="${utils.htmlEscape(option.value)}"${selected}>${utils.htmlEscape(option.label)}</option>`;
-      }).join('');
-      
-      var rowHtml = `<td class="field-name">${utils.htmlEscape(label)}</td><td><select class="cycleway-dropdown value">${optionsHtml}</select></td>`;
-      var rowEl = El('tr').html(rowHtml);
-      var cellEl = rowEl.findChild('.value');
-      
-      // Add event listener for dropdown changes
-      cellEl.on('change', function(e) {
-        var newValue = cellEl.node().value;
-        gui.dispatchEvent('data_preupdate', {ids: recIds});
-        updateRecords(recIds, key, newValue, table);
-        gui.dispatchEvent('data_postupdate', {ids: recIds});
-        self.dispatchEvent('data_updated', {field: key, value: newValue, ids: recIds});
-      });
-      setFieldClass(cellEl, val, type);
-      return rowEl;
-      
-    } else {
-      // All other fields or non-editable cycleway
-      var displayStr = getDisplayValue(key, val, str);
+      // A multi-selection whose values differ arrives here as null.
+      var displayStr = val === null && recIds.length > 1 ? 'Varies' : getDisplayValue(key, val, str);
       var rowHtml = `<td class="field-name">${utils.htmlEscape(label)}</td><td><span class="value">${utils.htmlEscape(displayStr)}</span> </td>`;
       var rowEl = El('tr').html(rowHtml);
       var cellEl = rowEl.findChild('.value');
-      
+
       setFieldClass(cellEl, val, type);
       return rowEl;
     }
-  }
 
   function setFieldClass(el, val, type) {
     var isNum = type ? type == 'number' : utils.isNumber(val);
@@ -315,12 +272,99 @@ function updateRecords(ids, f, v, table) {
   ids.forEach(function(id) {
     var d = records[id] || {};
     // Skip updating if highway is bus or train
-    if (d.highway == 'bus' || d.highway == 'train') {
+    if (isTransitLink(d)) {
       return;
     }
     d[f] = v;
     records[id] = d;
   });
+}
+
+// Recolours edited links and copies the edit onto the link running the
+// other way along the same street (links are one-directional).
+export function applyCyclewayStyle(gui, ids, value) {
+  var colour = getCyclewayColor(value);
+  if (!colour) return;
+  var active = gui.model.getActiveLayer();
+  var layer = active && active.layer;
+  if (!layer || !layer.data) return;
+  var records = layer.data.getRecords();
+  var shapes = layer.shapes;
+  var idsToUpdate = new Set(ids);
+
+  // Helper to identify topologically equivalent shapes
+  var getShapeKey = function(shape) {
+    if (!shape || !shape.length) return null;
+    if (Array.isArray(shape[0]) && typeof shape[0][0] === 'number') {
+      var arcs = [];
+      for (var i=0; i<shape.length; i++) {
+        for (var j=0; j<shape[i].length; j++) {
+          var id = shape[i][j];
+          arcs.push(id < 0 ? ~id : id);
+        }
+      }
+      return arcs.sort(function(a, b) { return a - b; }).join(',');
+    }
+    return null;
+  };
+
+  if (shapes) {
+    var targetKeys = [];
+    ids.forEach(function(id) {
+      var key = getShapeKey(shapes[id]);
+      if (key) targetKeys.push(key);
+    });
+
+    if (targetKeys.length > 0) {
+      for (var i=0; i<shapes.length; i++) {
+        if (idsToUpdate.has(i)) continue;
+        var key = getShapeKey(shapes[i]);
+        if (key && targetKeys.includes(key)) {
+          if (isTransitLink(records[i])) {
+            continue;
+          }
+          idsToUpdate.add(i);
+        }
+      }
+    }
+  }
+
+  var allIds = Array.from(idsToUpdate);
+  allIds.forEach(function(id) {
+    if (records[id]) {
+      // Only apply colour if highway is not bus or train
+      if (!isTransitLink(records[id])) {
+        records[id].stroke = colour;
+      }
+      if (!ids.includes(id)) {
+        records[id].cycleway = value;
+      }
+    }
+  });
+
+  gui.session.dataValueUpdated(ids, 'stroke', colour);
+
+  var otherIds = allIds.filter(function(id) { return !ids.includes(id); });
+  if (otherIds.length > 0) {
+    gui.session.dataValueUpdated(otherIds, 'cycleway', value);
+    gui.session.dataValueUpdated(otherIds, 'stroke', colour);
+  }
+
+  gui.dispatchEvent('map-needs-refresh');
+}
+
+// Lets the FASTrack shell change links' cycleway type (e.g. to revert an
+// edit from its edits list) the same way the popup does.
+export function setCyclewayFromShell(gui, ids, value) {
+  var active = gui.model.getActiveLayer();
+  var layer = active && active.layer;
+  if (!layer || !layer.data || !ids.length) return;
+  gui.dispatchEvent('data_preupdate', {ids: ids});
+  updateRecords(ids, 'cycleway', value, layer.data);
+  gui.dispatchEvent('data_postupdate', {ids: ids});
+  gui.session.dataValueUpdated(ids, 'cycleway', value);
+  applyCyclewayStyle(gui, ids, value);
+  gui.dispatchEvent('fastrack_edits_changed');
 }
 
 function formatInspectorValue(val, type) {

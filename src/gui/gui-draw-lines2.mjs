@@ -17,7 +17,6 @@ import {
   getAvgPoint
   } from './gui-drawing-utils';
 import { translateDisplayPoint } from './gui-display-utils';
-import { showPopupAlert } from './gui-alert';
 import { addEmptyLayer } from './gui-add-layer-popup';
 
 // pixel distance threshold for hovering near a vertex or segment midpoint
@@ -65,6 +64,9 @@ export function initLineEditing(gui, ext, hit) {
   }
 
   gui.addMode('drawing_tool', turnOn, turnOff);
+
+  // Lets the FASTrack shell's "Done drawing" button end the line in progress.
+  window.__fastrackFinishDrawing = function() { finishCurrentPath(); };
 
   gui.on('interaction_mode_change', function(e) {
     if (e.mode == 'edit_lines' || e.mode == 'edit_polygons') {
@@ -129,18 +131,9 @@ export function initLineEditing(gui, ext, hit) {
     var target = hit.getHitTarget();
     initialArcCount = target.gui.displayArcs.size();
     initialShapeCount = target.shapes.length;
-    if (sessionCount === 0) {
-      showInstructions();
-    }
+    // The FASTrack shell shows its own drawing instructions in a bar along
+    // the bottom of the map, so Mapshaper's popup is skipped.
     sessionCount++;
-  }
-
-  function showInstructions() {
-    var isMac = navigator.userAgent.includes('Mac');
-    var undoKey = isMac ? '⌘' : '^';
-    var msg = `Instructions: click to start a path, click or drag to keep drawing. Drag vertices to reshape a path. Type ${undoKey}Z/${undoKey}Y to undo/redo.`;
-      alert = showPopupAlert(msg, null, {
-        non_blocking: true, max_width: '388px'});
   }
 
   function hideInstructions() {

@@ -1146,22 +1146,6 @@ img.close-btn:hover,
 	max-width: 260px;
 }
 
-.cycleway-dropdown {
-  width: 100%;
-  padding: 1px 1px;
-  border: 1px solid #ccc;
-  border-radius: 2px;
-  background-color: white;
-  font-size: 12px;
-  font-family: 'SourceSans3';
-}
-
-.cycleway-dropdown:focus {
-  outline: none;
-  border-color: #171c60;
-  box-shadow: 0 0 3px #171c60;
-}
-
 .popup .value {
 	outline: none;
 	word-wrap: break-word;

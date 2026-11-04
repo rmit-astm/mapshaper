@@ -1,4 +1,4 @@
-import { Popup } from './gui-popup';
+import { Popup, applyCyclewayStyle } from './gui-popup';
 import { EventDispatcher } from './gui-events';
 import { internal } from './gui-core';
 import { deleteFeature } from './gui-drawing-utils';
@@ -19,84 +19,8 @@ export function InspectionControl2(gui, hit) {
     gui.session.dataValueUpdated(e.ids, e.field, e.value);
 
     if (e.field == 'cycleway') {
-      var cyclewayColours = {
-        '': '#bdbdbd',
-        'bikepath': '#008300',
-        'shared_path': '#1baf7a',
-        'separated_lane': '#2a78d6',
-        'simple_lane': '#eda100',
-        'inadequate_lane': '#eb6834',
-        'shared_street': '#e34948'
-      };
-      var colour = cyclewayColours[e.value];
-      if (colour) {
-        var layer = gui.model.getActiveLayer().layer;
-        if (layer && layer.data) {
-          var records = layer.data.getRecords();
-          var shapes = layer.shapes;
-          var idsToUpdate = new Set(e.ids);
-
-          // Helper to identify topologically equivalent shapes
-          var getShapeKey = function(shape) {
-            if (!shape || !shape.length) return null;
-            if (Array.isArray(shape[0]) && typeof shape[0][0] === 'number') {
-              var arcs = [];
-              for (var i=0; i<shape.length; i++) {
-                for (var j=0; j<shape[i].length; j++) {
-                  var id = shape[i][j];
-                  arcs.push(id < 0 ? ~id : id);
-                }
-              }
-              return arcs.sort(function(a, b) { return a - b; }).join(',');
-            }
-            return null;
-          };
-
-          if (shapes) {
-             var targetKeys = [];
-             e.ids.forEach(function(id) {
-                 var key = getShapeKey(shapes[id]);
-                 if (key) targetKeys.push(key);
-             });
-             
-             if (targetKeys.length > 0) {
-                 for (var i=0; i<shapes.length; i++) {
-                     if (idsToUpdate.has(i)) continue;
-                     var key = getShapeKey(shapes[i]);
-                     if (key && targetKeys.includes(key)) {
-                         if (records[i] && (records[i].highway == 'bus' || records[i].highway == 'train')) {
-                             continue;
-                         }
-                         idsToUpdate.add(i);
-                     }
-                 }
-             }
-          }
-
-          var allIds = Array.from(idsToUpdate);
-          allIds.forEach(function(id) {
-            if (records[id]) {
-              // Only apply colour if highway is not bus or train
-              if (records[id].highway != 'bus' && records[id].highway != 'train') {
-                records[id].stroke = colour;
-              }
-              if (!e.ids.includes(id)) {
-                  records[id].cycleway = e.value;
-              }
-            }
-          });
-          
-          gui.session.dataValueUpdated(e.ids, 'stroke', colour);
-          
-          var otherIds = allIds.filter(function(id) { return !e.ids.includes(id); });
-          if (otherIds.length > 0) {
-              gui.session.dataValueUpdated(otherIds, 'cycleway', e.value);
-              gui.session.dataValueUpdated(otherIds, 'stroke', colour);
-          }
-
-          gui.dispatchEvent('map-needs-refresh');
-        }
-      }
+      applyCyclewayStyle(gui, e.ids, e.value);
+      gui.dispatchEvent('fastrack_edits_changed');
     }
 
     // Refresh the display if a style variable has been changed interactively
@@ -119,6 +43,21 @@ export function InspectionControl2(gui, hit) {
     }
     gui.contextMenu.open(e, target);
   });
+
+  // Tell the FASTrack shell which links are selected: the multi-selection,
+  // or the one link pinned by clicking in Inspect mode.
+  var _selectedKey = '';
+  hit.on('change', function(e) {
+    // In selection mode e.ids can include a hovered or highlighted link,
+    // so read the actual selection.
+    var selected = e.mode == 'selection' ? hit.getSelectionIds() : (e.pinned && e.id > -1 ? [e.id] : []);
+    var key = selected.join(',');
+    if (key != _selectedKey) {
+      _selectedKey = key;
+      gui.dispatchEvent('fastrack_selection_change', {ids: selected.concat()});
+    }
+  });
+  window.__fastrackClearSelection = function() { hit.clearSelection(); };
 
   hit.on('change', function(e) {
     if (!inspecting()) return;

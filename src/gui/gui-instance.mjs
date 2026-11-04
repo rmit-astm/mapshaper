@@ -16,6 +16,8 @@ import { initModeRules } from './gui-mode-rules';
 import { ContextMenu } from './gui-context-menu';
 import { Basemap } from './gui-basemap-control';
 import { DisplayOptions } from './gui-display-options-menu';
+import { setCyclewayFromShell } from './gui-popup';
+import { setFastrackTransitVisible } from './gui-fastrack';
 // import { ProjectOptions } from './gui-project-control';
 
 
@@ -58,6 +60,11 @@ export function GuiInstance(container, opts) {
   }
   gui.interaction = new InteractionMode(gui);
   window.__mshpGui = gui; // expose for the FASTrack shell's quick-actions toolbar
+  window.__fastrackSetCycleway = function(ids, value) { setCyclewayFromShell(gui, ids, value); };
+  window.__fastrackSetTransitVisible = function(visible) {
+    setFastrackTransitVisible(visible);
+    gui.dispatchEvent('map-needs-refresh');
+  };
 
   gui.showProgressMessage = function(msg) {
     if (!gui.progressMessage) {

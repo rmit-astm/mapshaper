@@ -137,6 +137,29 @@ export function MshpMap(gui) {
   this.isActiveLayer = isActiveLayer;
   this.isVisibleLayer = isVisibleLayer;
   this.getActiveLayer = function() { return _activeLyr; };
+
+  // Zooms to the given features and highlights the first one; used by the
+  // FASTrack shell's edits list.
+  this.zoomToFeatures = function(ids) {
+    var lyr = _activeLyr;
+    if (!lyr || !_nav || !ids.length) return;
+    var displayLyr = lyr.gui.displayLayer || lyr;
+    var subset = {
+      geometry_type: displayLyr.geometry_type,
+      shapes: ids.map(function(id) { return displayLyr.shapes[id]; }).filter(Boolean)
+    };
+    var bounds = internal.getLayerBounds(subset, lyr.gui.displayArcs);
+    if (!bounds || !bounds.hasBounds()) return;
+    var a = _ext.translateCoords(bounds.xmin, bounds.ymin);
+    var b = _ext.translateCoords(bounds.xmax, bounds.ymax);
+    // Keep at least ~300px around short links so the street stays recognisable.
+    var pad = 150;
+    var cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2;
+    var hw = Math.max(Math.abs(b[0] - a[0]) / 2 + 40, pad);
+    var hh = Math.max(Math.abs(b[1] - a[1]) / 2 + 40, pad);
+    _nav.zoomToBbox([cx - hw, cy - hh, cx + hw, cy + hh]);
+    if (_hit) _hit.setHitId(ids[0]);
+  };
   // this.getViewData = function() {
   //   return {
   //     isPreview: isPreviewView(),

@@ -1,5 +1,6 @@
 import { utils, geom, internal, error } from './gui-core';
 import { absArcId } from '../paths/mapshaper-arc-utils';
+import { isTransitLink } from './gui-fastrack';
 
 // featureFilter: optional test function, accepts feature id
 //
@@ -195,6 +196,7 @@ export function getShapeHitTest(layer, ext, interactionMode, featureFilter) {
   // Returns array of shape ids for shapes that pass a buffered bounding-box test
   function findHitCandidates(x, y, dist) {
     var arcs = layer.gui.displayArcs,
+        records = layer.data ? layer.data.getRecords() : null,
         index = {},
         cands = [],
         bbox = [];
@@ -202,6 +204,9 @@ export function getShapeHitTest(layer, ext, interactionMode, featureFilter) {
       var cand;
       if (featureFilter && !featureFilter(shpId)) {
         return;
+      }
+      if (records && isTransitLink(records[shpId])) {
+        return; // not editable, so not hoverable or selectable either
       }
       for (var i = 0, n = shp && shp.length; i < n; i++) {
         arcs.getSimpleShapeBbox(shp[i], bbox);
