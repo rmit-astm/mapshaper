@@ -79,7 +79,7 @@ var startEditing = function() {
     }
   });
 
-  window.addEventListener('unload', function(e) {
+  window.addEventListener('pagehide', function(e) {
     if (window.location.hostname == 'localhost') {
       // send termination signal for mapshaper-gui
       var req = new XMLHttpRequest();
