@@ -18,6 +18,20 @@ const onBundle = {
   }
 };
 
+// rollup-plugin-polyfill-node injects the build machine's absolute path as
+// __filename/__dirname. That makes builds non-reproducible and leaks a local
+// path into the public bundle. mproj only uses it for a Node-only nad lookup;
+// the browser bundle is not affected, so replace it with a stable value.
+const stableNodePaths = {
+  name: 'stable-node-paths',
+  renderChunk(code) {
+    return code.replace(
+      /(var __(?:filename|dirname)(?:\$\d+)?\s*=\s*)['"][^'"]*['"]/g,
+      (match, prefix) => `${prefix}'/mapshaper'`
+    );
+  }
+};
+
 export default [{
   treeshake: false,
   input: 'src/gui/gui.mjs',
@@ -41,7 +55,8 @@ export default [{
     }),
     commonjs(),
     json(),
-    nodePolyfills()
+    nodePolyfills(),
+    stableNodePaths
   ]
 }, {
   treeshake: true,

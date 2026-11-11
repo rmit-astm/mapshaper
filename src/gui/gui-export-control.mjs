@@ -158,7 +158,8 @@ export var ExportControl = function (gui) {
             let filename = `${cleanName}.${file.filename.split('.').pop()}`;
             console.log("Sending file:", filename);
             window.parent.postMessage({
-              type: 'mapshaperFileUpload',
+              v: 1,
+              type: 'mapshaper:file',
               content: file.content,
               filename: filename
             }, window.location.origin);

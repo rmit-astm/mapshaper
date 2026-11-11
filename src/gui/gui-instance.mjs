@@ -60,6 +60,9 @@ export function GuiInstance(container, opts) {
   }
   gui.interaction = new InteractionMode(gui);
   window.__mshpGui = gui; // expose for the FASTrack shell's quick-actions toolbar
+  if (window.parent !== window) {
+    window.parent.postMessage({ v: 1, type: 'viewer:ready' }, window.location.origin);
+  }
   window.__fastrackSetCycleway = function(ids, value) { setCyclewayFromShell(gui, ids, value); };
   window.__fastrackSetTransitVisible = function(visible) {
     setFastrackTransitVisible(visible);

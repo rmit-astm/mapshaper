@@ -19103,7 +19103,7 @@
 		tcxGen: tcxGen
 	});
 
-	var __filename$1 = '/Users/E122757/RMIT Research/mapshaper';
+	var __filename$1 = '/mapshaper';
 
 	var mproj$2 = {exports: {}};
 
