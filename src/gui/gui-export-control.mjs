@@ -161,7 +161,7 @@ export var ExportControl = function (gui) {
               type: 'mapshaperFileUpload',
               content: file.content,
               filename: filename
-            }, '*');
+            }, window.location.origin);
           });
 
         } else {

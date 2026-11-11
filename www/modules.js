@@ -19103,7 +19103,7 @@
 		tcxGen: tcxGen
 	});
 
-	var __filename = '/Users/E122757/RMIT Research/mapshaper';
+	var __filename$1 = '/Users/E122757/RMIT Research/mapshaper';
 
 	var mproj$2 = {exports: {}};
 
@@ -20095,7 +20095,7 @@
 			  var fs = require$$0,
 			      path = require$$1,
 			      // path to library assumes mproj script is in the dist/ directory
-			      dir = path.join(path.dirname(__filename), '../nad'),
+			      dir = path.join(path.dirname(__filename$1), '../nad'),
 			      pathUC = path.join(dir, libFile.toUpperCase()),
 			      pathLC = path.join(dir, libFile.toLowerCase()),
 			      contents;
